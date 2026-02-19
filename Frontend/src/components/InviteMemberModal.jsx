@@ -16,7 +16,11 @@ export default function InviteMemberModal({ isOpen, onClose, project, onMemberAd
     setLoading(true); setError(''); setSuccess('');
     try {
       const res = await api.post(`/projects/${project._id}/invite`, { email, role });
-      onMemberAdded(res.data.project);
+      // onMemberAdded(res.data.project);
+      // Ab (safe):
+if (res.data.project) {
+  onMemberAdded(res.data.project);
+}
       setSuccess(`Invitation sent to ${email}`);
       setEmail('');
     } catch (err) {

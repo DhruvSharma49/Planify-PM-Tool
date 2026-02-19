@@ -1,22 +1,65 @@
-import React, { useState, useEffect } from 'react';
+
+
+import React, { useState, useEffect, useRef } from 'react';
+import ReactDOM from 'react-dom';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useNotifications } from '../context/NotificationContext';
 import Avatar from './Avatar';
+import { FiHome, FiFolder, FiPackage, FiBell, FiLogOut, FiCheck, FiX } from "react-icons/fi";
 import api from '../utils/API';
 
 export default function Layout({ children }) {
   const { user, logout } = useAuth();
-  const { unreadCount, notifications, markRead, markAllRead } = useNotifications();
+  const {
+    unreadCount,
+    notifications,
+    markRead,
+    markAllRead,
+    acceptInvite,
+    rejectInvite,
+    actionLoading,
+  } = useNotifications();
   const [projects, setProjects] = useState([]);
   const [showNotifs, setShowNotifs] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
 
+  const notifRef = useRef(null);
+  const userMenuRef = useRef(null);
+  const bellRef = useRef(null);
+  const [notifPos, setNotifPos] = useState({ bottom: 0, left: 0 });
+
   useEffect(() => {
     fetchProjects();
   }, [location.pathname]);
+
+  // Close notifications panel on outside click
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (notifRef.current && !notifRef.current.contains(e.target)) {
+        setShowNotifs(false);
+      }
+    };
+    if (showNotifs) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showNotifs]);
+
+  // Close user menu on outside click
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target)) {
+        setShowUserMenu(false);
+      }
+    };
+    if (showUserMenu) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showUserMenu]);
 
   const fetchProjects = async () => {
     try {
@@ -31,32 +74,28 @@ export default function Layout({ children }) {
   };
 
   return (
-    <div className="flex h-screen bg-void overflow-hidden">
+    <div className="flex h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-black overflow-hidden">
       {/* Sidebar */}
-      <aside className="w-64  bg-surface border-r border-border flex flex-col">
+      <aside className="w-64 bg-slate-900/80 backdrop-blur-md border-r border-slate-800 flex flex-col">
         {/* Logo */}
-        <div className="p-5 border-b border-border">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-gradient-to-br- from-violet-600 to-pink-600 rounded-lg flex items-center justify-center">
-              <span className="text-white font-display font-bold text-sm">P</span>
-            </div>
-            <span className="font-display font-bold text-white text-lg tracking-tight">Planify</span>
+        <div className="p-5 border-b border-slate-800 flex items-center gap-3">
+          <div className="w-10 h-10 bg-gradient-to-br from-violet-600 to-pink-600 rounded-lg flex items-center justify-center shadow-md">
+            <span className="text-white font-bold text-lg">P</span>
           </div>
+          <span className="font-display font-bold text-white text-lg tracking-tight">Planify</span>
         </div>
 
         {/* Nav */}
         <nav className="flex-1 p-3 overflow-y-auto">
           <Link
             to="/dashboard"
-            className={`flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium transition-colors mb-1 ${
+            className={`flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium transition-all mb-1 ${
               location.pathname === '/dashboard'
-                ? 'bg-violet-600/20 text-violet-400'
-                : 'text-slate-400 hover:text-white hover:bg-muted'
+                ? 'bg-gradient-to-r from-violet-600/30 to-indigo-600/20 text-violet-400 shadow-lg'
+                : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
             }`}
           >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7h18M3 12h18M3 17h18" />
-            </svg>
+            <FiHome className="text-base" />
             Dashboard
           </Link>
 
@@ -67,10 +106,10 @@ export default function Layout({ children }) {
               <Link
                 key={project._id}
                 to={`/projects/${project._id}`}
-                className={`flex items-center gap-3 px-3 py-2 rounded-xl text-sm transition-colors mb-0.5 ${
+                className={`flex items-center gap-2 px-3 py-2 rounded-xl text-sm transition-all mb-1 ${
                   location.pathname === `/projects/${project._id}`
-                    ? 'bg-violet-600/20 text-violet-400'
-                    : 'text-slate-400 hover:text-white hover:bg-muted'
+                    ? 'bg-gradient-to-r from-violet-600/20 to-indigo-600/10 text-violet-400 shadow-md'
+                    : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
                 }`}
               >
                 <span className="text-base">{project.icon}</span>
@@ -81,26 +120,36 @@ export default function Layout({ children }) {
         </nav>
 
         {/* User area */}
-        <div className="p-3 border-t border-border">
+        <div className="p-3 border-t border-slate-800 relative">
           <div className="flex items-center gap-2">
             <button
               onClick={() => { setShowUserMenu(!showUserMenu); setShowNotifs(false); }}
-              className="flex items-center gap-2 flex-1 p-2 rounded-xl hover:bg-muted transition-colors text-left"
+              className="flex items-center gap-2 flex-1 p-2 rounded-xl hover:bg-slate-800/50 transition-all text-left"
             >
               <Avatar user={user} size="sm" />
               <div className="flex-1 min-w-0">
                 <div className="text-sm font-medium text-white truncate">{user?.name}</div>
-                <div className="text-xs text-slate-500 truncate">{user?.email}</div>
+                <div className="text-xs text-slate-400 truncate">{user?.email}</div>
               </div>
             </button>
+
             {/* Notifications bell */}
             <button
-              onClick={() => { setShowNotifs(!showNotifs); setShowUserMenu(false); }}
-              className="relative w-9 h-9 flex items-center justify-center rounded-xl hover:bg-muted transition-colors text-slate-400 hover:text-white"
+              ref={bellRef}
+              onClick={() => {
+                if (!showNotifs && bellRef.current) {
+                  const rect = bellRef.current.getBoundingClientRect();
+                  setNotifPos({
+                    bottom: window.innerHeight - rect.top + 8,
+                    left: rect.left,
+                  });
+                }
+                setShowNotifs(!showNotifs);
+                setShowUserMenu(false);
+              }}
+              className="relative w-9 h-9 flex items-center justify-center rounded-xl hover:bg-slate-800/50 transition-all text-slate-400 hover:text-white"
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-              </svg>
+              <FiBell className="w-4 h-4" />
               {unreadCount > 0 && (
                 <span className="absolute top-1 right-1 w-4 h-4 bg-red-500 rounded-full text-white text-xs flex items-center justify-center font-bold">
                   {unreadCount > 9 ? '9+' : unreadCount}
@@ -109,64 +158,143 @@ export default function Layout({ children }) {
             </button>
           </div>
 
-          {/* User menu dropdown */}
+          {/* User menu */}
           {showUserMenu && (
-            <div className="mt-2 bg-card border border-border rounded-xl shadow-xl animate-slide-in">
+            <div ref={userMenuRef} className="mt-2 bg-slate-900/90 border border-slate-800 rounded-xl shadow-xl animate-slide-in">
               <button
                 onClick={handleLogout}
-                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-400 hover:bg-muted rounded-xl transition-colors"
+                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-400 hover:bg-slate-800 rounded-xl transition-colors"
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                </svg>
+                <FiLogOut className="w-4 h-4" />
                 Sign out
               </button>
             </div>
           )}
 
-          {/* Notifications panel */}
-          {showNotifs && (
-            <div className="absolute bottom-20 left-3 w-72 bg-card border border-border rounded-2xl shadow-2xl animate-slide-in z-50">
-              <div className="flex items-center justify-between p-3 border-b border-border">
+          {/* Notifications panel — rendered via portal to escape sidebar clipping */}
+          {showNotifs && ReactDOM.createPortal(
+            <div
+              ref={notifRef}
+              style={{
+                position: 'fixed',
+                bottom: notifPos.bottom,
+                left: notifPos.left,
+                zIndex: 9999,
+              }}
+              className="w-80 bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl animate-slide-in overflow-hidden"
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between px-4 py-3 border-b border-slate-800">
                 <span className="font-semibold text-white text-sm">Notifications</span>
                 {unreadCount > 0 && (
-                  <button onClick={markAllRead} className="text-xs text-violet-400 hover:text-violet-300">
+                  <button
+                    onClick={markAllRead}
+                    className="text-xs text-violet-400 hover:text-violet-300 transition-colors"
+                  >
                     Mark all read
                   </button>
                 )}
               </div>
-              <div className="max-h-80 overflow-y-auto">
+
+              {/* Notification list — scrollbar hidden */}
+              <div
+                className="max-h-96 overflow-y-auto divide-y divide-slate-800/50"
+                style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+              >
                 {notifications.length === 0 ? (
-                  <div className="p-6 text-center text-slate-500 text-sm">No notifications</div>
+                  <div className="p-6 text-center text-slate-500 text-sm">
+                    <FiBell className="w-8 h-8 mx-auto mb-2 opacity-30" />
+                    No notifications yet
+                  </div>
                 ) : (
-                  notifications.slice(0, 20).map(notif => (
-                    <div
-                      key={notif._id}
-                      onClick={() => markRead(notif._id)}
-                      className={`p-3 border-b border-border/50 cursor-pointer hover:bg-muted transition-colors ${!notif.read ? 'bg-violet-500/5' : ''}`}
-                    >
-                      <div className="flex gap-2">
-                        <div className={`w-2 h-2 rounded-full mt-1.5  ${!notif.read ? 'bg-violet-500' : 'bg-transparent'}`} />
-                        <div>
-                          <p className="text-sm text-slate-300">{notif.message}</p>
-                          <p className="text-xs text-slate-500 mt-0.5">
-                            {new Date(notif.createdAt).toLocaleDateString()}
-                          </p>
+                  notifications.slice(0, 20).map((notif, idx) => {
+                    if (!notif) return null;
+                    const notifId = notif._id || notif.id || `notif-${idx}`;
+                    const isInvite = notif.type === 'project_invite';
+                    const alreadyResponded = notif?.meta?.responded;
+                    const isLoading = actionLoading[notifId];
+
+                    const projectIdFromMeta = notif?.meta?.projectId;
+                    const projectIdFromLink = notif?.link?.split('/projects/')?.[1]?.split('/')?.[0];
+                    const resolvedProjectId = projectIdFromMeta || projectIdFromLink;
+                    const hasProjectId = !!resolvedProjectId;
+
+                    const enrichedNotif = hasProjectId
+                      ? { ...notif, meta: { ...(notif.meta || {}), projectId: resolvedProjectId } }
+                      : notif;
+
+                    let dateStr = '';
+                    try {
+                      if (notif.createdAt) {
+                        dateStr = new Date(notif.createdAt).toLocaleDateString('en-IN', {
+                          day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit'
+                        });
+                      }
+                    } catch {}
+
+                    return (
+                      <div
+                        key={notifId}
+                        className={`px-4 py-3 transition-all ${!notif.read ? 'bg-violet-500/5' : ''}`}
+                      >
+                        <div className="flex gap-3">
+                          <div className={`w-2 h-2 rounded-full mt-2 flex-shrink-0 ${!notif.read ? 'bg-violet-500' : 'bg-transparent'}`} />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm text-slate-300 leading-snug">
+                              {notif.message || 'New notification'}
+                            </p>
+                            {dateStr && <p className="text-xs text-slate-500 mt-1">{dateStr}</p>}
+
+                            {isInvite && hasProjectId && !alreadyResponded && (
+                              <div className="flex gap-2 mt-2.5">
+                                <button
+                                  onClick={() => acceptInvite(enrichedNotif)}
+                                  disabled={!!isLoading}
+                                  className="flex items-center gap-1.5 px-3 py-1.5 bg-violet-600 hover:bg-violet-500 text-white text-xs rounded-lg font-medium transition-colors disabled:opacity-50"
+                                >
+                                  {isLoading === 'accepting' ? <span className="animate-pulse">Joining...</span> : <><FiCheck className="w-3 h-3" />Accept</>}
+                                </button>
+                                <button
+                                  onClick={() => rejectInvite(enrichedNotif)}
+                                  disabled={!!isLoading}
+                                  className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-slate-300 text-xs rounded-lg font-medium transition-colors disabled:opacity-50"
+                                >
+                                  {isLoading === 'rejecting' ? <span className="animate-pulse">Declining...</span> : <><FiX className="w-3 h-3" />Decline</>}
+                                </button>
+                              </div>
+                            )}
+
+                            {isInvite && alreadyResponded && (
+                              <span className={`inline-block mt-2 text-xs px-2 py-0.5 rounded-md font-medium ${
+                                alreadyResponded === 'accepted' ? 'bg-green-500/15 text-green-400' : 'bg-slate-700 text-slate-400'
+                              }`}>
+                                {alreadyResponded === 'accepted' ? '✓ Joined' : '✗ Declined'}
+                              </span>
+                            )}
+
+                            {!isInvite && !notif.read && notifId && (
+                              <button
+                                onClick={() => markRead(notifId)}
+                                className="mt-1.5 text-xs text-slate-500 hover:text-violet-400 transition-colors"
+                              >
+                                Mark as read
+                              </button>
+                            )}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))
+                    );
+                  })
                 )}
               </div>
-            </div>
+            </div>,
+            document.body
           )}
         </div>
       </aside>
 
       {/* Main content */}
-      <main className="flex-1 overflow-hidden flex flex-col">
-        {children}
-      </main>
+      <main className="flex-1 overflow-hidden flex flex-col">{children}</main>
     </div>
   );
 }

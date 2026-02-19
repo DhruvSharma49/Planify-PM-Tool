@@ -8,6 +8,7 @@ import DashboardPage from './pages/Dashboard';
 import ProjectPage from './pages/ProjectPage';
 import Layout from './components/Layout';
 import LoadingSpinner from './components/LoadingSpinner';
+import ArrivedTasks from './pages/ArrivedTasks';
 
 const PrivateRoute = ({ children }) => {
   const { user, loading } = useAuth();
@@ -28,6 +29,7 @@ const AppRoutes = () => (
     <Route path="/register" element={<PublicRoute><RegisterPage /></PublicRoute>} />
     <Route path="/dashboard" element={<PrivateRoute><Layout><DashboardPage /></Layout></PrivateRoute>} />
     <Route path="/projects/:id" element={<PrivateRoute><Layout><ProjectPage /></Layout></PrivateRoute>} />
+    <Route path="/arrived" element={<PrivateRoute><Layout><ArrivedTasks /></Layout></PrivateRoute>} />
   </Routes>
 );
 

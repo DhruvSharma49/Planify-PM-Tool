@@ -2494,7 +2494,7 @@ Without these, Nginx closes the WebSocket upgrade handshake and Socket.io falls 
 ### Emails not being delivered
 1. Check `logs/error.log` for SMTP errors
 2. Verify credentials in `.env` — SMTP_USER, SMTP_PASS, SMTP_HOST, SMTP_PORT
-3. For development, check your Mailtrap inbox
+3. For development, check your Mailtrap inbox 
 4. Email failures are non-fatal and won't break API responses
 
 ### File upload returns 415 Unsupported Media Type

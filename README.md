@@ -1,6 +1,6 @@
 <div align="center">
 
-# ⚡ FlowSpace
+# ⚡ Planify
 
 ### A professional, real-time collaborative project management platform
 

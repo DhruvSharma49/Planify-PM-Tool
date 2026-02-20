@@ -2514,7 +2514,7 @@ RATE_LIMIT_WINDOW_MS=900000
 
 <div align="center">
 
-**Made with ⚡ by the FlowSpace Team**
+**Made with ⚡ by the Dhruv Sharma**
 
 *Built with Node.js · Express · Socket.io · MongoDB · JWT*
 

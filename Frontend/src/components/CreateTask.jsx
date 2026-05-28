@@ -19,7 +19,10 @@ export default function BoardColumn({ column, tasks, projectId, onTaskCreated, o
       onTaskCreated(res.data.task);
       setNewTaskTitle('');
       setAddingTask(false);
-    } catch {}
+    } catch (err) {
+      console.error(err);
+      alert("Failed to create task");
+    } 
     finally { setLoading(false); }
   };
 

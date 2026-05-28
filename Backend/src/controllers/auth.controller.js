@@ -9,13 +9,13 @@ const generateTokens = (userId) => {
 
 const setTokenCookies = (res, accessToken, refreshToken) => {
   res.cookie('accessToken', accessToken, {
-    // httpOnly: true,
+    httpOnly: true,
     secure: true,
     sameSite: 'none',
     maxAge: 10 * 60 * 1000
   });
   res.cookie('refreshToken', refreshToken, {
-    // httpOnly: true,
+    httpOnly: true,
     secure: true,
     sameSite: 'none',
     maxAge: 15 * 60 *1000

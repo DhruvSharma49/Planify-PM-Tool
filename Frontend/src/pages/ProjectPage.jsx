@@ -4,7 +4,7 @@ import { DragDropContext } from "@hello-pangea/dnd";
 import api from "../utils/API";
 import { getSocket } from "../utils/socket";
 import { useAuth } from "../context/AuthContext";
-import BoardColumn from "../components/BoardColumn";
+import BoardColumn from "../components/CreateTask";
 import TaskDetailModal from "../components/TaskDetailModal";
 import InviteMemberModal from "../components/InviteMemberModal";
 import Avatar from "../components/Avatar";

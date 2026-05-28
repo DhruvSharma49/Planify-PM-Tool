@@ -202,64 +202,74 @@ All endpoints are prefixed with `/api`. Protected routes require `Authorization:
 
 ### Auth — `/api/auth`
 
-| Method | Endpoint | Description |
-|---|---|---|
-| POST | `/register` | Create account |
-| POST | `/login` | Login, returns token pair |
-| POST | `/refresh-token` | Exchange refresh token for new access token |
-| GET | `/me` | Get current user (protected) |
-| PATCH | `/me` | Update profile (protected) |
-| POST | `/logout` | Logout (protected) |
+| Method | Endpoint | Auth | Description |
+|---|---|---|---|
+| POST | `/register` | — | Create account |
+| POST | `/login` | — | Login, returns access + refresh token |
+| POST | `/refresh` | — | Exchange refresh token for new access token |
+| POST | `/logout` | — | Logout |
+| GET | `/me` | ✓ | Get current user profile |
 
 ### Projects — `/api/projects`
 
+All routes require authentication.
+
 | Method | Endpoint | Description |
 |---|---|---|
-| GET | `/` | Get all user's projects |
-| POST | `/` | Create a project |
-| GET | `/:id` | Get project details |
-| PATCH | `/:id` | Update project |
+| GET | `/` | Get all projects the user belongs to |
+| POST | `/` | Create a new project |
+| GET | `/:id` | Get a single project |
+| PUT | `/:id` | Update project details |
 | DELETE | `/:id` | Delete project |
-| POST | `/:id/members` | Invite member by email |
-| DELETE | `/:id/members/:userId` | Remove member |
-| POST | `/:id/columns` | Add column |
-| PATCH | `/:id/columns/:colId` | Update column |
-| DELETE | `/:id/columns/:colId` | Delete column |
+| POST | `/:id/invite` | Invite a member by email |
+| DELETE | `/:id/members/:userId` | Remove a member |
+| POST | `/:id/accept-invite` | Accept a project invitation |
+| POST | `/:id/reject-invite` | Reject a project invitation |
+| POST | `/:id/leave` | Leave a project |
 
-### Tasks — `/api/projects/:projectId/tasks`
+### Tasks — `/api/tasks`
+
+All routes require authentication.
 
 | Method | Endpoint | Description |
 |---|---|---|
-| GET | `/` | List tasks (filterable) |
-| POST | `/` | Create task |
-| GET | `/:taskId` | Get task details |
-| PATCH | `/:taskId` | Update task |
-| PATCH | `/:taskId/move` | Move task to column |
-| DELETE | `/:taskId` | Delete task |
+| GET | `/arrived` | Get tasks assigned to the current user |
+| GET | `/project/:projectId` | Get all tasks in a project |
+| POST | `/project/:projectId` | Create a task in a project |
+| GET | `/:id` | Get a single task |
+| PUT | `/:id` | Update a task |
+| PATCH | `/:id/move` | Move task to a different column |
+| DELETE | `/:id` | Delete a task |
 
 ### Comments — `/api/comments`
 
+All routes require authentication.
+
 | Method | Endpoint | Description |
 |---|---|---|
-| POST | `/` | Add comment to task |
-| PATCH | `/:id` | Edit comment |
-| DELETE | `/:id` | Delete comment |
+| GET | `/task/:taskId` | Get all comments on a task |
+| POST | `/task/:taskId` | Add a comment to a task |
+| PUT | `/:id` | Edit a comment |
+| DELETE | `/:id` | Delete a comment |
 
 ### Notifications — `/api/notifications`
 
+All routes require authentication.
+
 | Method | Endpoint | Description |
 |---|---|---|
-| GET | `/` | Get notifications |
-| PATCH | `/read-all` | Mark all as read |
-| PATCH | `/:id/read` | Mark one as read |
-| DELETE | `/:id` | Delete notification |
+| GET | `/` | Get current user's notifications |
+| PATCH | `/read-all` | Mark all notifications as read |
+| PATCH | `/:id/read` | Mark a single notification as read |
 
 ### Users — `/api/users`
 
+All routes require authentication.
+
 | Method | Endpoint | Description |
 |---|---|---|
-| GET | `/search?q=` | Search users by name/email |
-| GET | `/:id` | Get user profile |
+| GET | `/search?q=` | Search users by name or email |
+| PUT | `/profile` | Update current user's profile |
 
 ---
 
@@ -312,7 +322,7 @@ Login → { accessToken (7d), refreshToken (30d) }
          ↓
 Request with Bearer token
          ↓
-401 TOKEN_EXPIRED → POST /auth/refresh-token → new accessToken
+401 TOKEN_EXPIRED → POST /auth/refresh → new accessToken
          ↓
 Original request retried
 ```

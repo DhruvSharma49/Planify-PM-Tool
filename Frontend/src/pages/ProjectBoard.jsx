@@ -32,18 +32,15 @@ export default function ProjectBoard() {
   useEffect(() => {
 
     fetchTasks();
-
-    // join room
+ 
     socket.emit("joinProject", id);
 
-    // listeners
     const handleTaskUpdated = () => {
       fetchTasks();
     };
 
     socket.on("taskUpdated", handleTaskUpdated);
 
-    // cleanup
     return () => {
 
       socket.emit("leaveProject", id);

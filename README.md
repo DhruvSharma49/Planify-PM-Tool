@@ -13,7 +13,6 @@
 [![MongoDB](https://img.shields.io/badge/MongoDB-Mongoose_9-47A248?style=flat-square&logo=mongodb)](https://mongodb.com)
 [![React](https://img.shields.io/badge/React-19-61DAFB?style=flat-square&logo=react)](https://react.dev)
 [![Socket.io](https://img.shields.io/badge/Socket.io-4.8-010101?style=flat-square&logo=socketdotio)](https://socket.io)
-[![License](https://img.shields.io/badge/License-MIT-blue?style=flat-square)](LICENSE)
 
 </div>
 
@@ -37,7 +36,7 @@ Planify is a full-stack project management tool with real-time collaboration. Te
 | jsonwebtoken | ^9.0.3 | JWT authentication |
 | bcrypt | ^6.0.0 | Password hashing |
 | cors | ^2.8.6 | Cross-origin requests |
-| cookie-parser | ^1.4.7 | Cookie handling |
+| cookie-parser | ^1.4.7 | Cookie handling (auth token storage) |
 | dotenv | ^17.2.3 | Environment variables |
 
 **Frontend**
@@ -133,41 +132,25 @@ project-management/
 - Node.js >= 18
 - MongoDB (local or [Atlas](https://www.mongodb.com/atlas))
 
-### Installation
-
-```bash
-# Clone the repo
-git clone https://github.com/your-username/planify.git
-cd planify
-
-# Install backend dependencies
-cd Backend
-npm install
-
-# Install frontend dependencies
-cd ../Frontend
-npm install
-```
-
 ### Environment Variables
 
 Create a `.env` file in the `Backend/` directory:
 
 ```env
-PORT=5000
+PORT=
 MONGODB_URI=mongodb://localhost:27017/planify
 JWT_SECRET=your-jwt-secret-at-least-32-chars
 JWT_REFRESH_SECRET=your-refresh-secret-at-least-32-chars
 JWT_EXPIRES_IN=7d
 JWT_REFRESH_EXPIRES_IN=30d
-CLIENT_URL=http://localhost:5173
+CLIENT_URL=""
 ```
 
 Create a `.env` file in the `Frontend/` directory:
 
 ```env
-VITE_API_URL=http://localhost:5000/api
-VITE_SOCKET_URL=http://localhost:5000
+VITE_API_URL=""
+VITE_Backend_URL=""
 ```
 
 ### Running the App
@@ -180,35 +163,33 @@ npm run dev
 npm run dev
 ```
 
-Backend runs on `http://localhost:5000`, frontend on `http://localhost:5173`.
-
 ---
 
 ## Features
 
-- **Auth** — Register, login, JWT access + refresh token flow
+- **Auth** — Register, login, fully cookie-based JWT auth (no tokens in localStorage)
 - **Projects** — Create and manage Kanban projects with custom columns
 - **Tasks** — Create, assign, prioritize, and drag-and-drop tasks between columns
 - **Comments** — Real-time comments on tasks
 - **Notifications** — In-app notifications via Socket.io with unread badge
-- **Member Management** — Invite members to projects by email with role-based access
+- **Member Management** — Invite members to projects, accept/reject invites, leave projects
 - **Real-Time** — All board changes sync instantly to all connected users
 
 ---
 
 ## API Reference
 
-All endpoints are prefixed with `/api`. Protected routes require `Authorization: Bearer <token>`.
+All endpoints are prefixed with `/api`. Authentication is handled via cookies sent automatically with every request (withCredentials: true).
 
 ### Auth — `/api/auth`
 
-| Method | Endpoint | Auth | Description |
-|---|---|---|---|
-| POST | `/register` | — | Create account |
-| POST | `/login` | — | Login, returns access + refresh token |
-| POST | `/refresh` | — | Exchange refresh token for new access token |
-| POST | `/logout` | — | Logout |
-| GET | `/me` | ✓ | Get current user profile |
+| Method | Endpoint | Description |
+|---|---|---|
+| POST | `/register` | Create account — sets auth cookie |
+| POST | `/login` | Login — sets auth cookie, returns user object |
+| POST | `/refresh` | Refreshes session using cookie |
+| POST | `/logout` | Clears the auth cookie |
+| GET | `/me` | Get current user (requires valid cookie) |
 
 ### Projects — `/api/projects`
 
@@ -273,19 +254,35 @@ All routes require authentication.
 
 ---
 
-## Socket.io Events
+## Socket.io
 
-Connect with your JWT in the handshake:
+The socket connects automatically using `withCredentials: true` — no token is passed manually. The server authenticates the socket via the cookie sent on connection.
 
 ```javascript
+// utils/socket.jsx
 import { io } from 'socket.io-client';
 
-const socket = io(import.meta.env.VITE_SOCKET_URL, {
-  auth: { token: localStorage.getItem('accessToken') }
-});
+let socket = null;
 
-// Join a project room
-socket.emit('join:project', projectId);
+export const getSocket = () => {
+  if (!socket) {
+    socket = io(import.meta.env.VITE_Backend_URL, {
+      withCredentials: true,
+      autoConnect: true,
+      reconnection: true,
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1000
+    });
+  }
+  return socket;
+};
+
+export const disconnectSocket = () => {
+  if (socket) {
+    socket.disconnect();
+    socket = null;
+  }
+};
 ```
 
 **Client → Server**
@@ -315,17 +312,22 @@ socket.emit('join:project', projectId);
 
 ## Authentication Flow
 
-Tokens are stored in `localStorage`. The API client in `utils/API.jsx` attaches the access token to every request and handles 401 responses by calling the refresh endpoint automatically.
+Planify uses a fully cookie-based auth strategy. No tokens are stored in `localStorage` or React state — the browser sends the cookie automatically on every request and socket connection.
 
 ```
-Login → { accessToken (7d), refreshToken (30d) }
-         ↓
-Request with Bearer token
-         ↓
-401 TOKEN_EXPIRED → POST /auth/refresh → new accessToken
-         ↓
-Original request retried
+Register / Login
+      ↓
+Server sets JWT as a cookie
+      ↓
+AuthContext calls GET /auth/me on app load
+      ↓
+User object stored in React state (not the token)
+      ↓
+Every API request sends cookie automatically (withCredentials: true)
+      ↓
+Cookie expired → POST /auth/refresh → new cookie set by server
 ```
+
 
 ---
 
@@ -335,36 +337,17 @@ Original request retried
 
 **Project** — `_id`, `name`, `description`, `emoji`, `color`, `status`, `visibility`, `owner`, `members[]`, `columns[]`, `activity[]`
 
-**Task** — `_id`, `title`, `description`, `project`, `column`, `position`, `status`, `priority`, `assignees[]`, `reporter`, `dueDate`, `tags[]`, `checklist[]`, `comments[]`, `attachments[]`
+**Task** — `_id`, `title`, `description`, `project`, `column`, `position`, `status`, `priority`, `assignees[]`, `reporter`, `dueDate`, `tags[]`, `checklist[]`, `comments[]`
 
 **Notification** — `_id`, `recipient`, `sender`, `type`, `title`, `message`, `isRead`, `project`, `task`, `createdAt`
 
 ---
 
-## Deployment
-
-### Railway / Render / Heroku
-
-1. Push your repo to GitHub
-2. Connect to your platform of choice
-3. Set all environment variables in the dashboard
-4. Use MongoDB Atlas for the database
-5. Backend start command: `node src/server.js`
-6. Frontend build command: `npm run build`
-
-### Production Checklist
-
-- [ ] Strong, unique `JWT_SECRET` and `JWT_REFRESH_SECRET` (32+ chars)
-- [ ] `MONGODB_URI` points to Atlas with auth
-- [ ] `CLIENT_URL` matches your deployed frontend domain
-- [ ] `NODE_ENV=production`
-- [ ] CORS only allows your frontend domain
-
----
-
 ## Troubleshooting
 
-**MongoDB connection refused** — Make sure MongoDB is running locally (`mongod`) or that your Atlas connection string is correct.
+**Cookie not being sent** — Make sure Axios is initialized with `withCredentials: true` and the backend CORS config has `credentials: true` with `origin` set to your exact frontend URL (not `*`).
+
+**`GET /auth/me` returns 401 on page refresh** — The cookie may have expired or wasn't set. Check the `Set-Cookie` header in the login response using browser DevTools → Network tab.
 
 **Socket.io polling instead of WebSocket** — If deploying behind Nginx, add these headers to your proxy config:
 ```nginx
@@ -372,7 +355,7 @@ proxy_set_header Upgrade $http_upgrade;
 proxy_set_header Connection "upgrade";
 ```
 
-**401 on every request** — The access token may be expired. Verify the refresh token interceptor in `utils/API.jsx` is working correctly.
+**MongoDB connection refused** — Make sure MongoDB is running locally (`mongod`) or that your Atlas connection string is correct.
 
 ---
 

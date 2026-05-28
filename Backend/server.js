@@ -20,10 +20,9 @@ const io = new Server(server, {
   }
 });
 
-// Connect to DB
+
 connectDB();
 
-// Middleware
 app.use(cors({
   origin: process.env.CLIENT_URL ,
   credentials: true
@@ -56,5 +55,5 @@ app.use((err, req, res, next) => {
 
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
+  console.log(` Server running on port ${PORT}`);
 });

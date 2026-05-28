@@ -17,7 +17,15 @@ const projectSchema = new mongoose.Schema({
   columns: [columnSchema],
   color: { type: String, default: '#6366f1' },
   icon: { type: String, default: '📋' },
-  isArchived: { type: Boolean, default: false }
+  isArchived: { type: Boolean, default: false },
+  invites: [
+  {
+    user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    role: { type: String, default: 'member' },
+    status: { type: String, default: 'pending' } // pending, accepted, rejected
+  }
+]
+
 }, { timestamps: true });
 
 // Add owner as admin member automatically

@@ -1,44 +1,113 @@
-import React, { useState, useEffect } from "react";
+
+
+
+import React, { useState, useEffect, useCallback } from "react";
 import api from "../utils/API";
 import { useParams } from "react-router-dom";
 import TaskCard from "../components/TaskCard";
-import { io } from "socket.io-client";
+import { getSocket } from "../utils/socket";
 
 export default function ProjectBoard() {
+
   const { id } = useParams();
+
   const [tasks, setTasks] = useState([]);
   const [title, setTitle] = useState("");
   const [desc, setDesc] = useState("");
-  const socket = io("http://localhost:5000", { withCredentials: true });
 
-  const fetchTasks = async () => {
-    const res = await api.get(`/tasks/${id}`);
-    setTasks(res.data);
-  };
+  const socket = getSocket();
 
-  useEffect(() => {
-    fetchTasks();
-    socket.emit("joinProject", id);
-    socket.on("taskUpdated", data => fetchTasks());
-    return () => { socket.disconnect(); };
+  const fetchTasks = useCallback(async () => {
+    try {
+
+      const res = await api.get(`/tasks/${id}`);
+
+      setTasks(res.data);
+
+    } catch (err) {
+      console.log(err);
+    }
   }, [id]);
 
+  useEffect(() => {
+
+    fetchTasks();
+
+    // join room
+    socket.emit("joinProject", id);
+
+    // listeners
+    const handleTaskUpdated = () => {
+      fetchTasks();
+    };
+
+    socket.on("taskUpdated", handleTaskUpdated);
+
+    // cleanup
+    return () => {
+
+      socket.emit("leaveProject", id);
+
+      socket.off("taskUpdated", handleTaskUpdated);
+
+    };
+
+  }, [id, fetchTasks]);
+
   const createTask = async () => {
-    await api.post("/tasks", { title, description: desc, project: id });
-    socket.emit("taskUpdated", { projectId: id });
-    setTitle(""); setDesc("");
+
+    try {
+
+      await api.post("/tasks", {
+        title,
+        description: desc,
+        project: id
+      });
+
+      socket.emit("taskUpdated", {
+        projectId: id
+      });
+
+      setTitle("");
+      setDesc("");
+
+    } catch (err) {
+      console.log(err);
+    }
   };
 
   return (
     <div>
+
       <h2>Project Board</h2>
-      <input placeholder="Task Title" value={title} onChange={e => setTitle(e.target.value)} />
-      <input placeholder="Description" value={desc} onChange={e => setDesc(e.target.value)} />
-      <button onClick={createTask}>Add Task</button>
+
+      <input
+        placeholder="Task Title"
+        value={title}
+        onChange={(e) => setTitle(e.target.value)}
+      />
+
+      <input
+        placeholder="Description"
+        value={desc}
+        onChange={(e) => setDesc(e.target.value)}
+      />
+
+      <button onClick={createTask}>
+        Add Task
+      </button>
 
       <div>
-        {tasks.map(task => <TaskCard key={task._id} task={task} projectId={id} socket={socket} />)}
+        {tasks.map((task) => (
+          <TaskCard
+            key={task._id}
+            task={task}
+            projectId={id}
+            socket={socket}
+          />
+        ))}
       </div>
+
     </div>
   );
 }

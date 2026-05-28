@@ -2,8 +2,8 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/user.model');
 
 const generateTokens = (userId) => {
-  const accessToken = jwt.sign({ userId }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '15m' });
-  const refreshToken = jwt.sign({ userId }, process.env.REFRESH_TOKEN_SECRET, { expiresIn: '7d' });
+  const accessToken = jwt.sign({ userId }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '10m' });
+  const refreshToken = jwt.sign({ userId }, process.env.REFRESH_TOKEN_SECRET, { expiresIn: '15m' });
   return { accessToken, refreshToken };
 };
 
@@ -12,13 +12,13 @@ const setTokenCookies = (res, accessToken, refreshToken) => {
     // httpOnly: true,
     secure: true,
     sameSite: 'none',
-    maxAge: 15 * 60 * 1000 // 15 minutes
+    maxAge: 10 * 60 * 1000
   });
   res.cookie('refreshToken', refreshToken, {
     // httpOnly: true,
     secure: true,
     sameSite: 'none',
-    maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+    maxAge: 15 * 60 *1000
   });
 };
 

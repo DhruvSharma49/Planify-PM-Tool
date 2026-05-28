@@ -4,7 +4,7 @@ let socket = null;
 
 export const getSocket = () => {
   if (!socket) {
-    socket = io('/', {
+    socket = io(import.meta.env.VITE_Backend_URL, {
       withCredentials: true,
       autoConnect: true,
       reconnection: true,

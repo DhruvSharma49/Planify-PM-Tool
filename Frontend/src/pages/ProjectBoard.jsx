@@ -1,6 +1,3 @@
-
-
-
 import React, { useState, useEffect, useCallback } from "react";
 import api from "../utils/API";
 import { useParams } from "react-router-dom";

@@ -1,6 +1,3 @@
-// ============================================================
-// NOTIFICATIONS PANEL
-// ============================================================
 const NotificationsPanel = ({ onClose }) => {
   const { notifications, clearNotifications } = useApp();
   return (

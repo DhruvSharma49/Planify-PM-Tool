@@ -92,9 +92,10 @@ project-management/
         │   ├── AuthWrapper.jsx
         │   ├── Avatar.jsx
         │   ├── Badge.jsx
-        │   ├── BoardColumn.jsx
         │   ├── CommentBox.jsx
         │   ├── CreatePostModal.jsx
+        │   ├── CreateProject.jsx
+        │   ├── CreateTask.jsx
         │   ├── InviteMemberModal.jsx
         │   ├── Layout.jsx
         │   ├── LoadingSpinner.jsx
@@ -107,12 +108,9 @@ project-management/
         │   └── NotificationContext.jsx
         ├── pages/
         │   ├── ArrivedTasks.jsx
-        │   ├── CreateProject.jsx
-        │   ├── CreateTask.jsx
-        │   ├── Dashboard.jsx
+        │   |── Dashboard.jsx
         │   ├── Login.jsx
         │   ├── NotificationPanel.jsx
-        │   ├── ProjectBoard.jsx
         │   ├── Projectdetails.jsx
         │   ├── ProjectPage.jsx
         │   └── Register.jsx

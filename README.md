@@ -76,6 +76,7 @@ project-management/
 │       │   ├── projects.model.js
 │       │   ├── task.model.js
 │       │   └── user.model.js
+│       │   └── notification.model.js
 │       ├── routes/
 │       │   ├── auth.route.js
 │       │   ├── comments.route.js

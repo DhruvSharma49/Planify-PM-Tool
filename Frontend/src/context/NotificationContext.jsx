@@ -11,21 +11,40 @@ export const NotificationProvider = ({ children }) => {
   const { user } = useAuth();
 
   useEffect(() => {
-    if (!user) return;
-    fetchNotifications();
-    const socket = getSocket();
-    socket.on("notification:new", ({ notification }) => {
-      setNotifications((prev) => [notification, ...prev]);
-    });
-    return () => socket.off("notification:new");
-  }, [user]);
+    if (!user?._id) return;
 
-  const fetchNotifications = async () => {
-    try {
+    const socket = getSocket();
+
+    const syncNotifications = async () => {
       const res = await api.get("/notifications");
       setNotifications(res.data.notifications);
-    } catch {}
-  };
+    };
+
+    const handleConnect = () => {
+      syncNotifications();
+    };
+
+    const handleNew = ({ notification }) => {
+      setNotifications((prev) => {
+        const exists = prev.some((n) => n._id === notification._id);
+        return exists ? prev : [notification, ...prev];
+      });
+    };
+
+    // initial load
+    syncNotifications();
+
+    socket.on("connect", handleConnect);
+    socket.on("notification:new", handleNew);
+
+    window.addEventListener("focus", syncNotifications);
+
+    return () => {
+      socket.off("connect", handleConnect);
+      socket.off("notification:new", handleNew);
+      window.removeEventListener("focus", syncNotifications);
+    };
+  }, [user?._id]);
 
   const markRead = async (id) => {
     await api.patch(`/notifications/${id}/read`);
